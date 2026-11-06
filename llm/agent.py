@@ -174,7 +174,7 @@ class Agent():
 
         if self.tools:
             request["tools"] = self.tools
-            request["tool_choice"] = "auto"
+            request["tool_choice"] = "auto" # let the model decide whether to use a tool and which tool to use
 
         return self.agent.chat.completions.create(**request)
         

@@ -4,13 +4,17 @@ from llm.agent import Agent, AgentError
 from llm.tools.get_time_tool import GetTimeTool
 from datetime import datetime
 
+def get_system_prompt_from_file(file_path):
+    with open(file_path, "r", encoding="utf-8") as file:
+        return file.read()
+
 def get_current_time():
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 def main():
     load_dotenv()
 
-    agent = Agent("You are a helpful assistant.")
+    agent = Agent(get_system_prompt_from_file("./llm/system_prompt.txt"))
 
     tools = [GetTimeTool()]
 
