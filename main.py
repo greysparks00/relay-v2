@@ -29,11 +29,23 @@ async def main():
         )
         await agent.load_tools()
 
-        print(f"Loaded {len(mcp_manager.tools)} MCP tools.")
+        logging.info(f"Loaded {len(mcp_manager.tools)} MCP tools.")
 
         while True:
             try:
-                user_message = input("\nYou: ")
+                user_message = await asyncio.to_thread(input, "\nYou: ")
+                command = user_message.strip().lower()
+
+                if command in ("/exit", "/quit"):
+                    break
+
+                if command == "/clear":
+                    agent.clear()
+                    logging.info("Conversation cleared.")
+                    continue
+
+                if not user_message.strip():
+                    continue
 
             except KeyboardInterrupt:
                 break
@@ -46,12 +58,12 @@ async def main():
                     user_message=user_message
                 )
 
-                print("Assistant: ", end="", flush=True)
+                logging.info("Assistant: ")
                 async for content in completion:
-                    print(content, end="", flush=True)
+                    logging.info(content)
 
             except AgentError as error:
-                print(f"Error: {error}")
+                logging.error(f"Error: {error}")
 
 if __name__ == "__main__":
     asyncio.run(main())
