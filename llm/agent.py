@@ -1,6 +1,7 @@
 import copy
 import json
 import tiktoken
+from llm.timer_commands import timer_reply
 from mcp_client.mcp_manager import MCPManagerError
 from groq import AsyncGroq
 from groq._exceptions import (
@@ -195,12 +196,18 @@ class Agent():
             self.add_message("user", user_message)
 
             try:
-                async for chunk in self.handle_streamed_response(
-                    model, reasoning_effort, max_completion_tokens
-                ):
-                    yield chunk
+                reply = await timer_reply(user_message, self.mcp)
+                if reply is None:
+                    async for chunk in self.handle_streamed_response(
+                        model, reasoning_effort, max_completion_tokens
+                    ):
+                        yield chunk
+                else:
+                    self.add_message("assistant", reply)
+                    yield reply
 
-            # handle errors
+            except MCPManagerError as error:
+                raise AgentError(str(error)) from error
             except RateLimitError as error:
                 raise AgentError("Groq rate limit exceeded.") from error
 

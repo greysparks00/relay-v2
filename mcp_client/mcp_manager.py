@@ -1,5 +1,19 @@
 import logging
 
+def model_parameters(tool):
+    """Omit generated display labels that repeat names already sent to the model."""
+    schema = tool.input_schema.copy()
+    if schema.get("title") == f"{tool.name}Arguments":
+        del schema["title"]
+    if isinstance(schema.get("properties"), dict):
+        properties = schema["properties"].copy()
+        for name, detail in properties.items():
+            if isinstance(detail, dict) and detail.get("title") == name.replace("_", " ").title():
+                properties[name] = {key: value for key, value in detail.items() if key != "title"}
+        schema["properties"] = properties
+    return schema
+
+
 class MCPManagerError(Exception):
     pass
 
@@ -25,7 +39,7 @@ class MCPManager:
                 "function": {
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": tool.input_schema
+                    "parameters": model_parameters(tool)
                 }
             }
 
