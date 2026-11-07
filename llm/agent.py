@@ -35,11 +35,7 @@ class Agent():
 
         # load system instructions first
         self.add_message("system", system_prompt)
-
-    # discovers and loads available tools
-    async def load_tools(self):
-        await self.mcp.discover_tools()
-
+        
     # adds a message to the message history
     def add_message(self, role, content):
         self.messages.append({
@@ -173,7 +169,6 @@ class Agent():
             "reasoning_effort": reasoning_effort,
             "stream": True,
             "stop": None,
-            "citation_options": "enabled",
             "include_reasoning": False,
             "parallel_tool_calls": False,
         }
@@ -220,7 +215,7 @@ class Agent():
 
             except APIStatusError as error:
                 raise AgentError(
-                    f"Groq returned HTTP {error.status_code}."
+                    f"Groq HTTP {error.status_code}: {error.message}"
                 ) from error
 
             except APIError as error:
@@ -229,7 +224,6 @@ class Agent():
             self.trim_history()
 
             completed = True
-            print("tokens: " + str(self.estimate_context_tokens()))
             
         finally:
             # restore history if failed

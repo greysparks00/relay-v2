@@ -1,17 +1,12 @@
 import asyncio
 import logging
+from pathlib import Path
 from mcp import Client
 from dotenv import load_dotenv
 from mcp_client.mcp_manager import MCPManager
 from llm.agent import Agent, AgentError
-from datetime import datetime
-
-def get_system_prompt_from_file(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
-        return file.read()
 
 async def main():
-    # configure logging
     logging.basicConfig(
         filename="relay.log",
         level=logging.INFO,
@@ -24,10 +19,10 @@ async def main():
         mcp_manager = MCPManager(client)
 
         agent = Agent(
-            get_system_prompt_from_file("./llm/system_prompt.txt"),
+            Path("./llm/system_prompt.txt").read_text(),
             mcp_manager
         )
-        await agent.load_tools()
+        await mcp_manager.discover_tools()
 
         logging.info(f"Loaded {len(mcp_manager.tools)} MCP tools.")
     
@@ -55,7 +50,7 @@ async def main():
                     completion = agent.chat(
                         model="openai/gpt-oss-120b",
                         reasoning_effort="low",
-                        max_completion_tokens=1024,
+                        max_completion_tokens=4096,
                         user_message=user_message
                     )
 
@@ -65,7 +60,9 @@ async def main():
                         print(content, end="", flush=True)
 
                 except AgentError as error:
+                    print(f"\nError: {error}")
                     logging.error(f"Error: {error}")
+                    
         finally:
             await agent.agent.close()
             logging.info("Agent session closed.")

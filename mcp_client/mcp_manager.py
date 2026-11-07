@@ -1,18 +1,22 @@
 import logging
 
+# removes redundant display labels from tool schemas
 def model_parameters(tool):
-    """Omit generated display labels that repeat names already sent to the model."""
     schema = tool.input_schema.copy()
+
     if schema.get("title") == f"{tool.name}Arguments":
         del schema["title"]
+
     if isinstance(schema.get("properties"), dict):
         properties = schema["properties"].copy()
+
         for name, detail in properties.items():
             if isinstance(detail, dict) and detail.get("title") == name.replace("_", " ").title():
                 properties[name] = {key: value for key, value in detail.items() if key != "title"}
+        
         schema["properties"] = properties
-    return schema
 
+    return schema
 
 class MCPManagerError(Exception):
     pass
@@ -51,7 +55,6 @@ class MCPManager:
         try:
             result = await self.client.call_tool(name, arguments)
 
-        # invalid input
         except Exception as error:
             logging.exception("MCP request failed: %s", name)
             raise MCPManagerError("MCP tool request failed.") from error
