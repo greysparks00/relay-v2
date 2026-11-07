@@ -3,6 +3,7 @@
 import json
 import re
 
+from llm.app_commands import app_command
 from llm.system_info import system_command
 from llm.timer_commands import NUMBERS, timer_command
 
@@ -62,6 +63,8 @@ def direct_command(message: str):
         return None
     if re.search(r"\band\b", outside_quotes, re.I) and not plain.startswith(("pick between ", "pick one of ")):
         return None
+    if app := app_command(text):
+        return app
     if plain in {"what time is it", "what's the time", "what is the current time", "what's today's date",
                  "what is today's date", "what day is it"}:
         return "get_current_datetime", {}
