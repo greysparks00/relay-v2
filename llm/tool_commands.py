@@ -3,6 +3,7 @@
 import json
 import re
 
+from llm.system_info import system_command
 from llm.timer_commands import NUMBERS, timer_command
 
 TITLE = r'(?:"[^"\n]+"|[\w-]+(?: [\w-]+){0,7})'
@@ -47,6 +48,8 @@ def direct_command(message: str):
         return match[1], args
 
     text = command_text(text)
+    if hardware := system_command(text):
+        return hardware
     timer = timer_command(text)
     if timer:
         return timer

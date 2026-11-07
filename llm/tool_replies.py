@@ -3,6 +3,7 @@
 from datetime import datetime
 import json
 
+from llm.system_info import system_reply
 from llm.timer_commands import format_timer
 from llm.tool_commands import command_text, direct_command
 from mcp_client.mcp_manager import MCPManagerError
@@ -21,12 +22,14 @@ def result_value(envelope, tool):
     texts = [block["text"] for block in blocks]
     if tool in {"list_handoffs", "recall_facts", "check_timers"}:
         return [json.loads(text) for text in texts]
-    if tool in {"convert_units", "date_math", "convert_timezone", "resume_handoff", "read_fact", "set_timer", "cancel_timer"}:
+    if tool in {"get_system_info", "convert_units", "date_math", "convert_timezone", "resume_handoff", "read_fact", "set_timer", "cancel_timer"}:
         return json.loads(texts[0])
     return "\n".join(texts)
 
 
 def format_result(tool, value, args, message):
+    if tool == "get_system_info":
+        return system_reply(value, args.get("section", "overview"))
     if tool in {"set_timer", "cancel_timer", "check_timers"}:
         return format_timer(tool, value, args, command_text(message))
     if tool == "get_current_datetime":

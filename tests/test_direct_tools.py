@@ -10,6 +10,7 @@ from llm.tool_replies import DirectTools
 class DirectToolTests(IsolatedAsyncioTestCase):
     def test_voice_examples_cover_registered_tools(self):
         examples = {
+                  "get_system_info": "What are my CPU and GPU temperatures?",
                   "get_current_datetime": "What time is it?",
                   "convert_units": "Convert 180 Celsius to Fahrenheit",
                   "convert_timezone": "Convert 2026-11-07 15:00 Chicago to London",
