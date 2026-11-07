@@ -59,9 +59,10 @@ async def main():
                         user_message=user_message
                     )
 
-                    logging.info("Assistant: ")
+                    print("Assistant: ", end="", flush=True)
+
                     async for content in completion:
-                        logging.info(content)
+                        print(content, end="", flush=True)
 
                 except AgentError as error:
                     logging.error(f"Error: {error}")

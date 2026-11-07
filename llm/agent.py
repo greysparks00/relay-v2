@@ -18,8 +18,8 @@ class AgentError(Exception):
 class Agent():
     def __init__(self, system_prompt, mcp_manager):
         self.agent = AsyncGroq(
-            timeout=30,
-            max_retries=3,
+            timeout=60,
+            max_retries=2,
         )
         self.mcp = mcp_manager
         self.messages = []
@@ -165,16 +165,23 @@ class Agent():
         request = {
             "model": model,
             "messages": self.messages,
-            "temperature": 1,
+            "temperature": 0.6,
             "max_completion_tokens": max_completion_tokens,
             "top_p": 1,
             "reasoning_effort": reasoning_effort,
             "stream": True,
-            "stop": None
+            "stop": None,
+            "citation_options": "enabled",
+            "include_reasoning": False,
+            "parallel_tool_calls": False,
         }
 
         if self.mcp.tools:
-            request["tools"] = self.mcp.tools
+            request["tools"] = [
+                {"type": "browser_search"},
+                {"type": "code_interpreter"},
+                *self.mcp.tools
+            ]
             request["tool_choice"] = "auto" # let the model decide whether to use a tool and which tool to use
 
         return await self.agent.chat.completions.create(**request)
@@ -214,8 +221,8 @@ class Agent():
             self.trim_history()
 
             completed = True
-
-            print(self.estimate_context_tokens())
+            print("tokens: " + str(self.estimate_context_tokens()))
+            
         finally:
             # restore history if failed
             if not completed:
