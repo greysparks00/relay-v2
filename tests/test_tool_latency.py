@@ -3,7 +3,8 @@ from types import SimpleNamespace
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock
 
-from llm.timer_commands import timer_command, timer_reply
+from llm.timer_commands import timer_command
+from llm.tool_replies import DirectTools
 from mcp_client.mcp_manager import model_parameters
 
 
@@ -22,12 +23,12 @@ class ToolLatencyTests(IsolatedAsyncioTestCase):
         response = {"is_error": True, "content": [{"type": "text", "text": "Timer already exists."}]}
         manager = SimpleNamespace(tools=[{"function": {"name": "set_timer"}}],
                                   execute_tool=AsyncMock(return_value=json.dumps(response)))
-        self.assertIn("already exists", await timer_reply("Set a tea timer for 1 minute", manager))
+        self.assertIn("already exists", await DirectTools().reply("Set a tea timer for 1 minute", manager))
         manager.execute_tool.assert_awaited_once()
 
     async def test_missing_tool_falls_back(self):
         manager = SimpleNamespace(tools=[], execute_tool=AsyncMock())
-        self.assertIsNone(await timer_reply("List timers", manager))
+        self.assertIsNone(await DirectTools().reply("List timers", manager))
         manager.execute_tool.assert_not_awaited()
 
     def test_schema_keeps_meaningful_titles_and_real_fields(self):

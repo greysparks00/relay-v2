@@ -1,7 +1,7 @@
 import copy
 import json
 import tiktoken
-from llm.timer_commands import timer_reply
+from llm.tool_replies import DirectTools
 from mcp_client.mcp_manager import MCPManagerError
 from groq import AsyncGroq
 from groq._exceptions import (
@@ -23,6 +23,7 @@ class Agent():
             max_retries=2,
         )
         self.mcp = mcp_manager
+        self.direct_tools = DirectTools()
         self.messages = []
 
         self.max_tool_calls = 5
@@ -196,7 +197,7 @@ class Agent():
             self.add_message("user", user_message)
 
             try:
-                reply = await timer_reply(user_message, self.mcp)
+                reply = await self.direct_tools.reply(user_message, self.mcp)
                 if reply is None:
                     async for chunk in self.handle_streamed_response(
                         model, reasoning_effort, max_completion_tokens
@@ -297,3 +298,4 @@ class Agent():
     # clear the message history while preserving the system prompt
     def clear(self):
         self.messages = [self.messages[0]]
+        self.direct_tools.pending = None

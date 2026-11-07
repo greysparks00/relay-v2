@@ -1,9 +1,6 @@
 """Handle literal English timer commands locally. Other phrasing goes to the agent."""
 
-import json
 import re
-
-from mcp_client.mcp_manager import MCPManagerError
 
 
 # Unquoted names are single words. Quotes let callers specify an exact multiword name.
@@ -72,43 +69,21 @@ def timer_status(item: dict) -> str:
     raise ValueError("Unexpected timer state")
 
 
-async def timer_reply(message: str, manager) -> str | None:
-    command = timer_command(message)
-    if command is None:
-        return None
-    tool, args = command
-    if not any(t["function"]["name"] == tool for t in manager.tools):
-        return None
-
-    # Once dispatched, never retry a write just because its result was unexpected.
-    raw = await manager.execute_tool(tool, args)
-    try:
-        envelope = json.loads(raw)
-        if envelope.get("is_error") or envelope.get("isError"):
-            detail = next((p["text"] for p in envelope.get("content", []) if p.get("type") == "text"), "")
-            return detail or "The timer service reported an error."
-        value = envelope.get("structured_content", envelope.get("structuredContent"))
-        if value is not None:
-            value = value.get("result", value)
-        else:
-            items = [json.loads(p["text"]) for p in envelope["content"] if p["type"] == "text"]
-            value = items if tool == "check_timers" else items[0]
-        if tool == "check_timers":
-            if message.strip().rstrip(".?!").strip().casefold() == "what timers are running":
-                value = [item for item in value if item["state"] == "running"]
-            if not value:
-                return f"No timer named {args['name']}." if args else "No timers to report."
-            return " ".join(timer_status(item) for item in value)
-        name, state = value["name"], value["state"]
-        if tool == "set_timer" and state == "running":
-            return f"{name} timer set for {duration(value['remaining_seconds'])}."
-        if tool == "cancel_timer":
-            if state == "cancelled":
-                return f"Cancelled the {name} timer."
-            if state == "not_found":
-                return f"No timer named {name}."
-            if state == "expired":
-                return timer_status(value)
-    except (ValueError, TypeError, IndexError, KeyError, AttributeError) as error:
-        raise MCPManagerError("Unexpected timer result.") from error
-    raise MCPManagerError("Unexpected timer state.")
+def format_timer(tool, value, args, message):
+    if tool == "check_timers":
+        if message.strip().rstrip(".?!").strip().casefold() == "what timers are running":
+            value = [item for item in value if item["state"] == "running"]
+        if not value:
+            return f"No timer named {args['name']}." if args else "No timers to report."
+        return " ".join(timer_status(item) for item in value)
+    name, state = value["name"], value["state"]
+    if tool == "set_timer" and state == "running":
+        return f"{name} timer set for {duration(value['remaining_seconds'])}."
+    if tool == "cancel_timer":
+        if state == "cancelled":
+            return f"Cancelled the {name} timer."
+        if state == "not_found":
+            return f"No timer named {name}."
+        if state == "expired":
+            return timer_status(value)
+    raise ValueError("Unexpected timer state.")
