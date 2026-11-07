@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from pathlib import Path
 from mcp import Client
 from dotenv import load_dotenv
@@ -15,7 +16,8 @@ async def main():
 
     load_dotenv()
 
-    async with Client("http://127.0.0.1:8000/mcp") as client:
+    endpoint = os.environ.get("RELAY_MCP_URL") or "http://127.0.0.1:8000/mcp"
+    async with Client(endpoint) as client:
         mcp_manager = MCPManager(client)
 
         agent = Agent(
@@ -24,7 +26,7 @@ async def main():
         )
         await mcp_manager.discover_tools()
 
-        logging.info(f"Loaded {len(mcp_manager.tools)} MCP tools.")
+        logging.info(f"Loaded {len(mcp_manager.tools)} available tools.")
     
         try:
             while True:

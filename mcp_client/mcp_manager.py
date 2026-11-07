@@ -1,5 +1,7 @@
 import logging
 
+from client_apps import tools as local_apps
+
 # removes redundant display labels from tool schemas
 def model_parameters(tool):
     schema = tool.input_schema.copy()
@@ -47,11 +49,13 @@ class MCPManager:
                 }
             }
 
-            for tool in result.tools
-        ]
+            for tool in result.tools if tool.name not in local_apps.HANDLERS
+        ] + local_apps.definitions()
 
     # executes a tool and returns the result as JSON
     async def execute_tool(self, name, arguments):
+        if name in local_apps.HANDLERS:
+            return await local_apps.execute(name, arguments)
         try:
             result = await self.client.call_tool(name, arguments)
 

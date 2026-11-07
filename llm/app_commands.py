@@ -28,9 +28,13 @@ def app_command(text):
 def app_reply(tool, result, args):
     status = result["status"]
     if status == "not_found":
-        return f"I couldn't find {args['name']} among the registered Windows apps."
+        return f"I couldn't find {args['name']} among the apps on this computer."
     if status == "launch_requested":
-        return f"Asked Windows to open {result['name']}."
+        return f"Requested a local launch of {result['name']}."
+    if status == "no_desktop":
+        return f"I found {result['name']}, but this client has no graphical session to open it in."
+    if status == "no_launcher":
+        return f"I found {result['name']}, but this client needs the gio desktop launcher."
     if status == "not_launchable":
         return f"I found {result['name']}, but it has no app launch entry Relay can use."
     if status == "ambiguous":
@@ -39,7 +43,7 @@ def app_reply(tool, result, args):
     if status == "found":
         lines = []
         for app in result["matches"]:
-            location = f" at {app['location']}" if app["location"] else " in the Windows app catalog"
+            location = f" at {app['location']}" if app["location"] else " in the local app catalog"
             lines.append(f"{app['name']}{location}.")
         if result["count"] > len(lines):
             lines.append(f"Showing {len(lines)} of {result['count']} matches.")
