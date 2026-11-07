@@ -64,6 +64,8 @@ async def main():
 
             except AgentError as error:
                 logging.error(f"Error: {error}")
+                
+        await agent.agent.close()
 
 if __name__ == "__main__":
     asyncio.run(main())

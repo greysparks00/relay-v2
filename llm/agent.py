@@ -1,5 +1,6 @@
 import copy
 import json
+import tiktoken
 from mcp_client.mcp_manager import MCPManagerError
 from groq import AsyncGroq
 from groq._exceptions import (
@@ -25,6 +26,10 @@ class Agent():
 
         self.max_tool_calls = 5
         self.max_message_history = 50
+
+        self.tokenizer = tiktoken.get_encoding("o200k_harmony")
+        self.max_context_tokens = 24000
+        self.context_safety_tokens = 2048
 
         # load system instructions first
         self.add_message("system", system_prompt)
@@ -154,6 +159,9 @@ class Agent():
 
     # responsible for creating a chat completion request to the Groq client
     async def create_chat_completion_request(self, model, reasoning_effort, max_completion_tokens):
+        self.trim_context(max_completion_tokens)
+
+        # create the chat completion request
         request = {
             "model": model,
             "messages": self.messages,
@@ -211,6 +219,46 @@ class Agent():
             # restore history if failed
             if not completed:
                 self.messages = previous_messages
+
+    # estimate the token count for the current context
+    def estimate_context_tokens(self):
+        payload = {
+            "messages": self.messages,
+            "tools": self.mcp.tools
+        }
+
+        text = json.dumps(payload, ensure_ascii=False)
+
+        # add a small buffer for message metadata
+        return (
+            len(self.tokenizer.encode_ordinary(text))
+            + len(self.messages) * 10
+        )
+
+    # trim the context to fit within the token budget
+    def trim_context(self, max_completion_tokens):
+        budget = (
+            self.max_context_tokens
+            - max_completion_tokens
+            - self.context_safety_tokens
+        )
+
+        if budget <= 0:
+            raise AgentError("Invalid context token budget.")
+
+        while self.estimate_context_tokens() > budget:
+            next_user_message = next(
+                (
+                    i for i in range(2, len(self.messages))
+                    if self.messages[i]["role"] == "user"
+                ),
+                None
+            )
+
+            if next_user_message is None:
+                raise AgentError("Current conversation turn exceeds the token budget.")
+
+            del self.messages[1:next_user_message]
 
     # trim the message history to the maximum allowed length
     def trim_history(self):

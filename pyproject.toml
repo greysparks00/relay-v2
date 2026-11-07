@@ -7,4 +7,5 @@ dependencies = [
     "groq>=1.7.0",
     "mcp[cli]>=2.3.0",
     "python-dotenv>=1.2.4",
+    "tiktoken>=0.14.0",
 ]
