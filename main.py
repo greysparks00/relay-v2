@@ -30,42 +30,47 @@ async def main():
         await agent.load_tools()
 
         logging.info(f"Loaded {len(mcp_manager.tools)} MCP tools.")
+    
+        try:
+            while True:
+                try:
+                    user_message = await asyncio.to_thread(input, "\nYou: ")
+                    command = user_message.strip().lower()
 
-        while True:
-            try:
-                user_message = await asyncio.to_thread(input, "\nYou: ")
-                command = user_message.strip().lower()
+                    if command in ("/exit", "/quit"):
+                        break
 
-                if command in ("/exit", "/quit"):
+                    if command == "/clear":
+                        agent.clear()
+                        logging.info("Conversation cleared.")
+                        continue
+
+                    if not user_message.strip():
+                        continue
+
+                except KeyboardInterrupt:
                     break
 
-                if command == "/clear":
-                    agent.clear()
-                    logging.info("Conversation cleared.")
-                    continue
+                try:
+                    completion = agent.chat(
+                        model="openai/gpt-oss-120b",
+                        reasoning_effort="low",
+                        max_completion_tokens=1024,
+                        user_message=user_message
+                    )
 
-                if not user_message.strip():
-                    continue
+                    logging.info("Assistant: ")
+                    async for content in completion:
+                        logging.info(content)
 
-            except KeyboardInterrupt:
-                break
-
-            try:
-                completion = agent.chat(
-                    model="openai/gpt-oss-120b",
-                    reasoning_effort="low",
-                    max_completion_tokens=1024,
-                    user_message=user_message
-                )
-
-                logging.info("Assistant: ")
-                async for content in completion:
-                    logging.info(content)
-
-            except AgentError as error:
-                logging.error(f"Error: {error}")
-                
-        await agent.agent.close()
+                except AgentError as error:
+                    logging.error(f"Error: {error}")
+        finally:
+            await agent.agent.close()
+            logging.info("Agent session closed.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nRelay interrupted.")

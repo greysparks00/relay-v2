@@ -215,6 +215,7 @@ class Agent():
 
             completed = True
 
+            print(self.estimate_context_tokens())
         finally:
             # restore history if failed
             if not completed:
