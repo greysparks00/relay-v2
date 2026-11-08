@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock
 
-from llm.timer_commands import timer_command
+from llm.tool_commands import timer_command
 from llm.tool_replies import DirectTools
 from mcp_client.mcp_manager import model_parameters
 

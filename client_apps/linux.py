@@ -1,4 +1,4 @@
-"""Look up XDG desktop entries on this Linux client. GIO handles Exec and D-Bus activation."""
+# Look up XDG desktop entries on this Linux client. GIO handles Exec and D-Bus activation.
 
 import configparser
 import os

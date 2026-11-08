@@ -1,4 +1,4 @@
-"""Client-owned tools. Their names are reserved even if an older MCP server advertises them."""
+# Client-owned tools. Their names are reserved even if an older MCP server advertises them.
 
 import asyncio
 import json

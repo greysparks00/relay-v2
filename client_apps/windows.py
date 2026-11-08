@@ -1,4 +1,4 @@
-"""Resolve Windows display names using the current user's AppsFolder and install records."""
+# Resolve Windows display names using the current user's AppsFolder and install records.
 
 import json
 import os

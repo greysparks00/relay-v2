@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock
@@ -10,6 +11,7 @@ from llm.tool_replies import DirectTools
 class DirectToolTests(IsolatedAsyncioTestCase):
     def test_voice_examples_cover_registered_tools(self):
         examples = {
+                  "change_screen": 'Send "Hello" to screen 1',
                   "get_system_info": "What are my CPU and GPU temperatures?",
                   "get_current_datetime": "What time is it?",
                   "convert_units": "Convert 180 Celsius to Fahrenheit",
@@ -29,9 +31,27 @@ class DirectToolTests(IsolatedAsyncioTestCase):
                   "resume_handoff": "Resume handoff for Release",
                   "delete_handoff": "Delete handoff for release"
         }
+        # In the combined Relay workspace, also detect new MCP tools that lack
+        # a phrase. The agent repository can still run its tests independently.
+        catalog = Path(__file__).resolve().parents[2] / "relay-mcp" / "tools"
+        if catalog.is_dir():
+            registered = {p.parent.name for p in catalog.glob("*/tool.py")
+                          if not p.parent.name.startswith(("_", "."))}
+            self.assertEqual(set(examples), registered)
         for tool, message in examples.items():
             with self.subTest(tool=tool):
                 self.assertEqual(direct_command(message)[0], tool)
+
+    def test_screen_patterns_only_send_supplied_content(self):
+        self.assertEqual(direct_command("Switch screen number 1 to Fortnite"), (
+            "change_screen", {"id": 1, "screen": {"type": "text", "content": "Fortnite"}}))
+        self.assertEqual(direct_command('Send "Coffee and tea?" to screen 2'), (
+            "change_screen", {"id": 2, "screen": {"type": "text", "content": "Coffee and tea?"}}))
+        self.assertEqual(direct_command('Show comparison "A: fast" versus "B: quiet" on screen 1'), (
+            "change_screen", {"id": 1, "screen": {"type": "comparison", "option1": "A: fast", "option2": "B: quiet"}}))
+        for message in ("Use screen 1 to explain airplanes", "Use screen 2 to compare English and Spanish",
+                        "Send hello to screen 0", "Send hello to screen 1 then cancel my timer"):
+            self.assertIsNone(direct_command(message))
 
     def test_compound_and_conditional_requests_fall_back(self):
         self.assertIsNone(direct_command("Forget the fact office if it is outdated"))
