@@ -32,6 +32,9 @@ async def main():
     endpoint = mcp_endpoint()
     if profile := os.getenv("RELAY_ENV"):
         print(f"Relay environment: {profile}")
+        print(f"Relay MCP endpoint: {endpoint}")
+        print(f"Relay environment profile: {profile}")
+
     async with Client(endpoint) as client:
         mcp_manager = MCPManager(client)
 
