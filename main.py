@@ -7,6 +7,19 @@ from dotenv import load_dotenv
 from mcp_client.mcp_manager import MCPManager
 from llm.agent import Agent, AgentError
 
+def mcp_endpoint():
+    profile = os.getenv("RELAY_ENV")
+    if profile is None:
+        return os.getenv("RELAY_MCP_URL") or "http://127.0.0.1:8000/mcp"
+    if profile not in ("development", "production"):
+        raise ValueError("RELAY_ENV must be development or production")
+    setting = f"RELAY_{profile.upper()}_MCP_URL"
+    url = os.getenv(setting)
+    if not url:
+        raise ValueError(f"Set {setting} for the selected environment")
+    return url
+
+
 async def main():
     logging.basicConfig(
         filename="relay.log",
@@ -14,9 +27,11 @@ async def main():
         format="%(asctime)s %(levelname)s %(message)s"
     )
 
-    load_dotenv()
+    load_dotenv(Path(__file__).with_name(".env"))
 
-    endpoint = os.environ.get("RELAY_MCP_URL") or "http://127.0.0.1:8000/mcp"
+    endpoint = mcp_endpoint()
+    if profile := os.getenv("RELAY_ENV"):
+        print(f"Relay environment: {profile}")
     async with Client(endpoint) as client:
         mcp_manager = MCPManager(client)
 
