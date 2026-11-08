@@ -121,12 +121,17 @@ def result_value(envelope, tool):
     texts = [block["text"] for block in blocks]
     if tool in {"list_handoffs", "recall_facts", "check_timers"}:
         return [json.loads(text) for text in texts]
-    if tool in {"change_screen", "find_app", "open_app", "get_system_info", "convert_units", "date_math", "convert_timezone", "resume_handoff", "read_fact", "set_timer", "cancel_timer"}:
+    if tool in {"set_screen_enabled", "change_screen", "find_app", "open_app", "get_system_info", "convert_units", "date_math", "convert_timezone", "resume_handoff", "read_fact", "set_timer", "cancel_timer"}:
         return json.loads(texts[0])
     return "\n".join(texts)
 
 
 def format_result(tool, value, args, message):
+    if tool == "set_screen_enabled":
+        if value.get("status") != "applied" or value.get("id") != args["id"]:
+            raise ValueError("Unconfirmed kiosk state")
+        state = "awake" if args["enabled"] else "asleep"
+        return f"Screen {args['id']} is {state}."
     if tool == "change_screen":
         if value.get("status") != "accepted" or value.get("id") != args["id"]:
             raise ValueError("Unexpected screen acknowledgement")

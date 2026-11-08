@@ -97,7 +97,7 @@ REQUESTS = {
 
 
 def system_command(text):
-    text = text.casefold().replace("’", "'")
+    text = text.casefold().replace("â€™", "'")
     # Normalize wrappers around short phrases such as "what's my RAM usage?".
     phrase = re.sub(r"^(?:what(?:'s| is| are)|show(?: me)?|check|get|tell me)\s+(?:(?:the|my)\s+)?", "", text)
     for section, patterns in REQUESTS.items():
@@ -109,7 +109,7 @@ def system_command(text):
 TITLE = r'(?:"[^"\n]+"|[\w-]+(?: [\w-]+){0,7})'
 TEXT = r'(?:"[^"\n]+"|[\w-]+(?: [\w-]+){0,40})'
 DAY = r"(?:\d{4}-\d{2}-\d{2}|today|tomorrow|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
-UNIT = r"(?:(?:US |degrees? |fluid )?[a-z°_]+)"
+UNIT = r"(?:(?:US |degrees? |fluid )?[a-zÂ°_]+)"
 ZONE = r"(?:[a-z_]+(?:/[a-z_+-]+){1,2}|UTC|Chicago|London|New York|Los Angeles|Tokyo)"
 CITIES = {"chicago": "America/Chicago", "london": "Europe/London", "new york": "America/New_York",
           "los angeles": "America/Los_Angeles", "tokyo": "Asia/Tokyo", "utc": "UTC"}
@@ -135,6 +135,18 @@ SCREEN_TEXT = r'(?:"([^"\n]*)"|([\w-]+(?: [\w-]+){0,12}))'
 
 def screen_command(text):
     screen_id_pattern = r"(\d{1,10})"
+    # Power words control kiosk visibility separately from its layout. Require a
+    # numbered target so a casual "turn it off" cannot blank an unrelated display.
+    for enabled, pattern in (
+        (True, rf"(?:wake(?: up)?|enable|turn on) (?:screen|display) {screen_id_pattern}"),
+        (True, rf"turn (?:screen|display) {screen_id_pattern} on"),
+        (False, rf"(?:disable|turn off) (?:screen|display) {screen_id_pattern}"),
+        (False, rf"turn (?:screen|display) {screen_id_pattern} off"),
+        (False, rf"put (?:screen|display) {screen_id_pattern} to sleep"),
+    ):
+        match = re.fullmatch(pattern, text, re.I)
+        if match and 1 <= int(match[1]) <= 2147483647:
+            return "set_screen_enabled", {"id": int(match[1]), "enabled": enabled}
     match = re.fullmatch(rf'(?:send|display|show) {SCREEN_TEXT} (?:on|to) screen {screen_id_pattern}', text, re.I)
     if match:
         # A bare topic after "show" might be a request for generated material.

@@ -11,6 +11,7 @@ from llm.tool_replies import DirectTools
 class DirectToolTests(IsolatedAsyncioTestCase):
     def test_voice_examples_cover_registered_tools(self):
         examples = {
+                  "set_screen_enabled": "Turn off screen 1",
                   "change_screen": 'Send "Hello" to screen 1',
                   "get_system_info": "What are my CPU and GPU temperatures?",
                   "get_current_datetime": "What time is it?",
@@ -41,6 +42,12 @@ class DirectToolTests(IsolatedAsyncioTestCase):
         for tool, message in examples.items():
             with self.subTest(tool=tool):
                 self.assertEqual(direct_command(message)[0], tool)
+
+    def test_wake_and_sleep_require_an_explicit_screen(self):
+        self.assertEqual(direct_command("wake up screen 2"), ("set_screen_enabled", {"id": 2, "enabled": True}))
+        self.assertEqual(direct_command("put screen 1 to sleep"), ("set_screen_enabled", {"id": 1, "enabled": False}))
+        self.assertIsNone(direct_command("turn it off"))
+        self.assertIsNone(direct_command("turn off screen 1 if it is late"))
 
     def test_screen_patterns_only_send_supplied_content(self):
         self.assertEqual(direct_command("Switch screen number 1 to Fortnite"), (
